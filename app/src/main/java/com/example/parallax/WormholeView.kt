@@ -20,30 +20,42 @@ class WormholeView(context: Context, attrs: AttributeSet?) : View(context, attrs
     
     var pitch = 0f
     var roll = 0f
+    var expansion = 150f
+    var bgHue = 0f
+    var useBg = false
+    var lineMult = 1f
+    var spinSpeed = 0f
+    private var currentSpin = 0f
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawColor(Color.BLACK)
+        
+        if (useBg) {
+            canvas.drawColor(Color.HSVToColor(floatArrayOf(bgHue, 1f, 0.3f)))
+        } else {
+            canvas.drawColor(Color.BLACK)
+        }
         
         val w = width.toFloat()
         val h = height.toFloat()
         val cx = w / 2f
         val cy = h / 2f
         
-        val b = 150f
-        val numU = 40
-        val numV = 24
+        val numU = (40 * lineMult).toInt().coerceAtLeast(4)
+        val numV = (24 * lineMult).toInt().coerceAtLeast(4)
         val points = Array(numU) { Array(numV) { FloatArray(3) } }
         
         val uMin = -800f
         val uMax = 800f
         val uStep = (uMax - uMin) / (numU - 1)
         
+        currentSpin += spinSpeed
+        
         for (i in 0 until numU) {
             val u = uMin + i * uStep
-            val r = sqrt(u * u + b * b)
+            val r = sqrt(u * u + expansion * expansion)
             for (j in 0 until numV) {
-                val v = j * 2 * Math.PI / numV
+                val v = j * 2 * Math.PI / numV + currentSpin
                 val x = (r * cos(v)).toFloat()
                 val y = (r * sin(v)).toFloat()
                 val z = u
@@ -87,6 +99,10 @@ class WormholeView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     canvas.drawLine(p1[0], p1[1], p2[0], p2[1], paint)
                 }
             }
+        }
+        
+        if (spinSpeed != 0f) {
+            invalidate()
         }
     }
 }
