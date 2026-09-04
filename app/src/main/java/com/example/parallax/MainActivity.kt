@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 
@@ -27,15 +27,27 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         setContentView(R.layout.activity_main)
         
         wormholeView = findViewById(R.id.wormholeView)
-        val menuOptions = findViewById<LinearLayout>(R.id.menuOptions)
+        val menuScroll = findViewById<ScrollView>(R.id.menuScroll)
         
         findViewById<Button>(R.id.btnMinimize).setOnClickListener {
-            menuOptions.visibility = if (menuOptions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            menuScroll.visibility = if (menuScroll.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
         
         findViewById<Button>(R.id.btnClose).setOnClickListener {
             finish()
         }
+
+        findViewById<SeekBar>(R.id.seekRoom).setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, f: Boolean) { wormholeView.roomSize = p.toFloat() }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
+
+        findViewById<SeekBar>(R.id.seekFlare).setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, f: Boolean) { wormholeView.flare = p / 50f }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
         
         findViewById<SeekBar>(R.id.seekExpansion).setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, f: Boolean) { wormholeView.expansion = p.toFloat() }
