@@ -11,7 +11,7 @@
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_gravity="top|end"
         android:orientation="vertical"
         android:background="#CC000000"
@@ -40,31 +40,43 @@
                 android:textColor="#FFFFFF" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/menuOptions"
+        <ScrollView
+            android:id="@+id/menuScroll"
             android:layout_width="250dp"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:paddingTop="16dp">
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Expansion Angle" android:textColor="#FFFFFF"/>
-            <SeekBar android:id="@+id/seekExpansion" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="400" android:progress="150" android:paddingBottom="8dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                <CheckBox android:id="@+id/chkBg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:buttonTint="#FFFFFF"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bg Hue" android:textColor="#FFFFFF"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Room Size" android:textColor="#FFFFFF"/>
+                <SeekBar android:id="@+id/seekRoom" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="2000" android:progress="800" android:paddingBottom="8dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Exit Expansion" android:textColor="#FFFFFF"/>
+                <SeekBar android:id="@+id/seekFlare" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="0" android:paddingBottom="8dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Throat Diameter" android:textColor="#FFFFFF"/>
+                <SeekBar android:id="@+id/seekExpansion" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="400" android:progress="150" android:paddingBottom="8dp"/>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                    <CheckBox android:id="@+id/chkBg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:buttonTint="#FFFFFF"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bg Hue" android:textColor="#FFFFFF"/>
+                </LinearLayout>
+                <SeekBar android:id="@+id/seekHue" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="360" android:progress="0" android:paddingBottom="8dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Line Multiplier" android:textColor="#FFFFFF"/>
+                <SeekBar android:id="@+id/seekLines" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="200" android:progress="50" android:paddingBottom="8dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Spin" android:textColor="#FFFFFF"/>
+                <SeekBar android:id="@+id/seekSpin" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="50" android:paddingBottom="8dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Movement Smoother" android:textColor="#FFFFFF"/>
+                <SeekBar android:id="@+id/seekSmooth" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="99" android:progress="50" android:paddingBottom="16dp"/>
+
             </LinearLayout>
-            <SeekBar android:id="@+id/seekHue" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="360" android:progress="0" android:paddingBottom="8dp"/>
-
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Line Multiplier" android:textColor="#FFFFFF"/>
-            <SeekBar android:id="@+id/seekLines" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="200" android:progress="50" android:paddingBottom="8dp"/>
-
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Spin" android:textColor="#FFFFFF"/>
-            <SeekBar android:id="@+id/seekSpin" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="50" android:paddingBottom="8dp"/>
-
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Movement Smoother" android:textColor="#FFFFFF"/>
-            <SeekBar android:id="@+id/seekSmooth" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="99" android:progress="50"/>
-
-        </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 </FrameLayout>
