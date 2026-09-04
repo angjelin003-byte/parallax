@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <com.example.parallax.WormholeView
+        android:id="@+id/wormholeView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:orientation="vertical"
+        android:background="#CC000000"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnMinimize"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="_"
+                android:textSize="18sp"
+                android:background="#44FFFFFF"
+                android:textColor="#FFFFFF" />
+            <Button
+                android:id="@+id/btnClose"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:text="X"
+                android:background="#88FF0000"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/menuOptions"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Expansion Angle" android:textColor="#FFFFFF"/>
+            <SeekBar android:id="@+id/seekExpansion" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="400" android:progress="150" android:paddingBottom="8dp"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <CheckBox android:id="@+id/chkBg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:buttonTint="#FFFFFF"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bg Hue" android:textColor="#FFFFFF"/>
+            </LinearLayout>
+            <SeekBar android:id="@+id/seekHue" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="360" android:progress="0" android:paddingBottom="8dp"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Line Multiplier" android:textColor="#FFFFFF"/>
+            <SeekBar android:id="@+id/seekLines" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="200" android:progress="50" android:paddingBottom="8dp"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Spin" android:textColor="#FFFFFF"/>
+            <SeekBar android:id="@+id/seekSpin" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="50" android:paddingBottom="8dp"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Movement Smoother" android:textColor="#FFFFFF"/>
+            <SeekBar android:id="@+id/seekSmooth" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="99" android:progress="50"/>
+
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
