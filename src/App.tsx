@@ -12,6 +12,8 @@ const DEFAULT_CONFIG: WormholeConfig = {
   lineProgress: 50,
   spinProgress: 50,
   smoothProgress: 50,
+  fov: 65,
+  depthShading: 75,
 };
 
 export const App: React.FC = () => {

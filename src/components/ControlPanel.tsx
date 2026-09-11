@@ -152,7 +152,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ config, onChange }) 
           </div>
 
           {/* Movement Smoother */}
-          <div className="pb-4">
+          <div>
             <div className="text-white text-sm mb-1">Movement Smoother</div>
             <input
               id="seekSmooth"
@@ -161,6 +161,40 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ config, onChange }) 
               max="99"
               value={config.smoothProgress}
               onChange={(e) => onChange({ smoothProgress: Number(e.target.value) })}
+              className="w-full accent-white cursor-pointer pb-2"
+            />
+          </div>
+
+          {/* Perspective FOV */}
+          <div>
+            <div className="flex justify-between text-white text-sm mb-1">
+              <span>Perspective (FOV)</span>
+              <span className="text-white/60 text-xs">{config.fov}°</span>
+            </div>
+            <input
+              id="seekFov"
+              type="range"
+              min="30"
+              max="110"
+              value={config.fov}
+              onChange={(e) => onChange({ fov: Number(e.target.value) })}
+              className="w-full accent-white cursor-pointer pb-2"
+            />
+          </div>
+
+          {/* Depth Cueing / Falloff */}
+          <div className="pb-4">
+            <div className="flex justify-between text-white text-sm mb-1">
+              <span>Depth Falloff</span>
+              <span className="text-white/60 text-xs">{config.depthShading}%</span>
+            </div>
+            <input
+              id="seekDepthShading"
+              type="range"
+              min="0"
+              max="100"
+              value={config.depthShading}
+              onChange={(e) => onChange({ depthShading: Number(e.target.value) })}
               className="w-full accent-white cursor-pointer pb-4"
             />
           </div>

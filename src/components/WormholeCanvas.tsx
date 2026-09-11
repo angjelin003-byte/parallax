@@ -46,12 +46,13 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
   const targetSensorXRef = useRef<number>(0);
   const targetSensorYRef = useRef<number>(0);
 
-  // 3D Touch/Pointer rotation states
+  // 3D Touch/Pointer rotation and zoom states
   const touchRotXRef = useRef<number>(0);
   const touchRotYRef = useRef<number>(0);
   const touchRotZRef = useRef<number>(0);
+  const zoomRef = useRef<number>(1.0);
 
-  const lastTouchPosRef = useRef<{ cx: number; cy: number; angle: number } | null>(null);
+  const lastTouchPosRef = useRef<{ cx: number; cy: number; angle: number; dist: number } | null>(null);
   const isMouseDownRef = useRef<boolean>(false);
   const lastMousePosRef = useRef<{ x: number; y: number; button: number } | null>(null);
 
@@ -145,20 +146,64 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
 
       const cx = w / 2;
       const cy = h / 2;
-      const d = 1200;
-      const scale = 1000;
+      const cameraDist = 1300;
+      const fovDeg = Math.max(30, Math.min(110, cfg.fov || 65));
+      const fovRad = (fovDeg * Math.PI) / 180;
+      // Realistic pinhole perspective focal length scaled to canvas height and user zoom
+      const focalLength = ((h * 0.5) / Math.tan(fovRad * 0.5)) * zoomRef.current;
+      const zNear = 60;
 
-      const project = (p: [number, number, number]): [number, number] => {
-        const z = p[2] + d;
-        if (z <= 0.1) return [-10000, -10000];
-        const f = scale / z;
-        return [p[0] * f + cx, p[1] * f + cy];
+      // 3D Near-plane line clipping against camera near plane
+      const clipLineNear = (
+        p1: [number, number, number],
+        p2: [number, number, number]
+      ): [[number, number, number], [number, number, number]] | null => {
+        const z1 = p1[2];
+        const z2 = p2[2];
+        if (z1 < zNear && z2 < zNear) return null;
+        if (z1 >= zNear && z2 >= zNear) return [p1, p2];
+
+        const t = (zNear - z1) / (z2 - z1);
+        const clipped: [number, number, number] = [
+          p1[0] + t * (p2[0] - p1[0]),
+          p1[1] + t * (p2[1] - p1[1]),
+          zNear,
+        ];
+        return z1 < zNear ? [clipped, p2] : [p1, clipped];
       };
 
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#FFFFFF';
+      // Project point in camera coordinates (z >= zNear) to 2D screen coordinates
+      const project = (p: [number, number, number]): [number, number] => {
+        const invZ = 1 / p[2];
+        return [p[0] * invZ * focalLength + cx, p[1] * invZ * focalLength + cy];
+      };
+
+      // Depth bins for realistic perspective cues & depth falloff (aerial perspective)
+      const NUM_BINS = 12;
+      const binPaths: Path2D[] = Array.from({ length: NUM_BINS }, () => new Path2D());
+      const zMin = 350;
+      const zMax = 2300;
+      const depthStrength = (cfg.depthShading ?? 75) / 100;
+
+      const addSegment = (p1: [number, number, number], p2: [number, number, number]) => {
+        const clipped = clipLineNear(p1, p2);
+        if (!clipped) return;
+
+        const s1 = project(clipped[0]);
+        const s2 = project(clipped[1]);
+
+        // Guard against non-finite projection values
+        if (!Number.isFinite(s1[0]) || !Number.isFinite(s1[1]) || !Number.isFinite(s2[0]) || !Number.isFinite(s2[1])) {
+          return;
+        }
+
+        const zAvg = (clipped[0][2] + clipped[1][2]) * 0.5;
+        const normZ = Math.max(0, Math.min(1, (zAvg - zMin) / (zMax - zMin)));
+        const binIndex = Math.min(NUM_BINS - 1, Math.max(0, Math.floor(normZ * NUM_BINS)));
+
+        binPaths[binIndex].moveTo(s1[0], s1[1]);
+        binPaths[binIndex].lineTo(s2[0], s2[1]);
+      };
 
       // 1. Draw Room (World Space - Accelerometer Only)
       if (cfg.roomSize > 10) {
@@ -174,7 +219,7 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
           [-s, s, s],
         ];
 
-        const pCube: [number, number][] = [];
+        const roomCam: [number, number, number][] = [];
         const cosPitch = Math.cos(pitch);
         const sinPitch = Math.sin(pitch);
         const cosRoll = Math.cos(roll);
@@ -190,30 +235,26 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
           const x2 = rx * cosRoll + z1 * sinRoll;
           const z2 = -rx * sinRoll + z1 * cosRoll;
 
-          pCube[i] = project([x2, y1, z2]);
+          roomCam[i] = [x2, y1, z2 + cameraDist];
         }
 
-        ctx.beginPath();
-        // Back Wall (4 -> 5 -> 6 -> 7 -> 4)
-        ctx.moveTo(pCube[4][0], pCube[4][1]);
-        ctx.lineTo(pCube[5][0], pCube[5][1]);
-        ctx.lineTo(pCube[6][0], pCube[6][1]);
-        ctx.lineTo(pCube[7][0], pCube[7][1]);
-        ctx.closePath();
+        // Room back wall
+        addSegment(roomCam[4], roomCam[5]);
+        addSegment(roomCam[5], roomCam[6]);
+        addSegment(roomCam[6], roomCam[7]);
+        addSegment(roomCam[7], roomCam[4]);
 
-        // Side Walls
-        ctx.moveTo(pCube[0][0], pCube[0][1]);
-        ctx.lineTo(pCube[4][0], pCube[4][1]);
+        // Room side walls
+        addSegment(roomCam[0], roomCam[4]);
+        addSegment(roomCam[1], roomCam[5]);
+        addSegment(roomCam[2], roomCam[6]);
+        addSegment(roomCam[3], roomCam[7]);
 
-        ctx.moveTo(pCube[1][0], pCube[1][1]);
-        ctx.lineTo(pCube[5][0], pCube[5][1]);
-
-        ctx.moveTo(pCube[2][0], pCube[2][1]);
-        ctx.lineTo(pCube[6][0], pCube[6][1]);
-
-        ctx.moveTo(pCube[3][0], pCube[3][1]);
-        ctx.lineTo(pCube[7][0], pCube[7][1]);
-        ctx.stroke();
+        // Room front edges
+        addSegment(roomCam[0], roomCam[1]);
+        addSegment(roomCam[1], roomCam[2]);
+        addSegment(roomCam[2], roomCam[3]);
+        addSegment(roomCam[3], roomCam[0]);
       }
 
       // 2. Draw Wormhole (Local Space - Touch Rotation + Accelerometer)
@@ -243,12 +284,12 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
       const cosRoll = Math.cos(roll);
       const sinRoll = Math.sin(roll);
 
-      const points: [number, number][][] = new Array(numU);
+      const points3D: [number, number, number][][] = new Array(numU);
 
       for (let i = 0; i < numU; i++) {
         const u = uMin + i * uStep;
         const r = Math.sqrt(u * u + expansion * expansion) + flareVal * ((u * u) / 500);
-        points[i] = new Array(numV);
+        points3D[i] = new Array(numV);
 
         for (let j = 0; j < numV; j++) {
           const v = (j * 2 * Math.PI) / numV + currentSpin;
@@ -281,35 +322,44 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
           const x2 = x * cosRoll + z1 * sinRoll;
           const z2 = -x * sinRoll + z1 * cosRoll;
 
-          points[i][j] = project([x2, y1, z2]);
+          points3D[i][j] = [x2, y1, z2 + cameraDist];
         }
       }
 
-      ctx.beginPath();
-      // Draw rings along v circles
+      // Populate rings along v circles
       for (let i = 0; i < numU; i++) {
         for (let j = 0; j < numV; j++) {
-          const p1 = points[i][j];
-          const p2 = points[i][(j + 1) % numV];
-          if (p1[0] > -1000 && p2[0] > -1000) {
-            ctx.moveTo(p1[0], p1[1]);
-            ctx.lineTo(p2[0], p2[1]);
-          }
+          addSegment(points3D[i][j], points3D[i][(j + 1) % numV]);
         }
       }
 
-      // Draw generators along u lines
+      // Populate generators along u lines
       for (let j = 0; j < numV; j++) {
         for (let i = 0; i < numU - 1; i++) {
-          const p1 = points[i][j];
-          const p2 = points[i + 1][j];
-          if (p1[0] > -1000 && p2[0] > -1000) {
-            ctx.moveTo(p1[0], p1[1]);
-            ctx.lineTo(p2[0], p2[1]);
-          }
+          addSegment(points3D[i][j], points3D[i + 1][j]);
         }
       }
-      ctx.stroke();
+
+      // Render depth bins back-to-front for realistic depth sorting and aerial perspective
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (let k = NUM_BINS - 1; k >= 0; k--) {
+        const normK = k / (NUM_BINS - 1); // 0 (near) .. 1 (far)
+
+        // Line width diminishes realistically with distance
+        const baseWidth = 3.2;
+        const width = baseWidth * (1 - normK * 0.68 * depthStrength) + (1 - depthStrength) * 0.4;
+        ctx.lineWidth = Math.max(0.8, width);
+
+        // Aerial perspective / atmospheric depth falloff
+        const nearAlpha = 1.0;
+        const farAlpha = 0.18;
+        const alpha = nearAlpha - (nearAlpha - farAlpha) * normK * depthStrength;
+
+        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0.12, Math.min(1.0, alpha)).toFixed(3)})`;
+        ctx.stroke(binPaths[k]);
+      }
 
       ctx.restore();
       animationFrameId = requestAnimationFrame(render);
@@ -333,12 +383,13 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
       const cx = (x1 + x2) / 2;
       const cy = (y1 + y2) / 2;
       const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+      const dist = Math.hypot(x2 - x1, y2 - y1);
 
-      lastTouchPosRef.current = { cx, cy, angle };
+      lastTouchPosRef.current = { cx, cy, angle, dist };
     } else if (e.touches.length === 1) {
       const x = e.touches[0].clientX;
       const y = e.touches[0].clientY;
-      lastTouchPosRef.current = { cx: x, cy: y, angle: 0 };
+      lastTouchPosRef.current = { cx: x, cy: y, angle: 0, dist: 0 };
     }
   };
 
@@ -352,16 +403,24 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
       const cx = (x1 + x2) / 2;
       const cy = (y1 + y2) / 2;
       const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+      const dist = Math.hypot(x2 - x1, y2 - y1);
 
       const dx = cx - lastTouchPosRef.current.cx;
       const dy = cy - lastTouchPosRef.current.cy;
       const dAngle = angle - lastTouchPosRef.current.angle;
 
+      // Two-touch rotation (drag and twist)
       touchRotYRef.current += dx * 0.005;
       touchRotXRef.current += dy * 0.005;
       touchRotZRef.current += (dAngle * Math.PI) / 180;
 
-      lastTouchPosRef.current = { cx, cy, angle };
+      // Two-touch pinch zoom in and out
+      if (lastTouchPosRef.current.dist > 0 && dist > 0) {
+        const factor = dist / lastTouchPosRef.current.dist;
+        zoomRef.current = Math.max(0.15, Math.min(8.0, zoomRef.current * factor));
+      }
+
+      lastTouchPosRef.current = { cx, cy, angle, dist };
     } else if (e.touches.length === 1 && lastTouchPosRef.current) {
       const cx = e.touches[0].clientX;
       const cy = e.touches[0].clientY;
@@ -371,7 +430,7 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
       touchRotYRef.current += dx * 0.005;
       touchRotXRef.current += dy * 0.005;
 
-      lastTouchPosRef.current = { cx, cy, angle: 0 };
+      lastTouchPosRef.current = { cx, cy, angle: 0, dist: 0 };
     }
   };
 
@@ -405,11 +464,17 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
     lastMousePosRef.current = null;
   };
 
+  // Mouse wheel zoom
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
+    zoomRef.current = Math.max(0.15, Math.min(8.0, zoomRef.current * factor));
+  };
+
   return (
     <canvas
       ref={canvasRef}
       id="wormholeView"
-      className="absolute inset-0 w-full h-full block cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 w-full h-full block cursor-grab active:cursor-grabbing touch-none select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -417,6 +482,13 @@ export const WormholeCanvas: React.FC<WormholeCanvasProps> = ({ config }) => {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onWheel={handleWheel}
+      onDoubleClick={() => {
+        zoomRef.current = 1.0;
+        touchRotXRef.current = 0;
+        touchRotYRef.current = 0;
+        touchRotZRef.current = 0;
+      }}
       onContextMenu={(e) => e.preventDefault()}
     />
   );

@@ -7,4 +7,6 @@ export interface WormholeConfig {
   lineProgress: number;    // 0..200 (default 50) -> lineMult = (p + 10) / 50f
   spinProgress: number;    // 0..100 (default 50) -> spinSpeed = (p - 50) / 500f
   smoothProgress: number;  // 0..99 (default 50) -> smoothAlpha = 1f - (p / 100f)
+  fov: number;             // 30..110 (default 65) -> Field of view in degrees
+  depthShading: number;    // 0..100 (default 75) -> Atmospheric depth falloff & perspective cues
 }
